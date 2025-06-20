@@ -1,0 +1,4 @@
+name: AllayCommand
+version: 1.0
+main: allayplugins.stompado.AllayCommand
+authors: [ Stompado ]

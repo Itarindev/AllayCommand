@@ -1,8 +1,14 @@
 package allayplugins.stompado.manager;
 
-import allayplugins.stompado.commands.CommandBase;
+import allayplugins.stompado.command.CommandBase;
+import allayplugins.stompado.resolver.ArgumentResolver;
 import allayplugins.stompado.method.CommandMethod;
-import org.apache.commons.lang.math.NumberUtils;
+import allayplugins.stompado.resolver.booleans.BooleanResolver;
+import allayplugins.stompado.resolver.command.CommandParameterResolver;
+import allayplugins.stompado.resolver.numbers.DoubleResolver;
+import allayplugins.stompado.resolver.numbers.IntegerResolver;
+import allayplugins.stompado.resolver.player.PlayerResolver;
+import allayplugins.stompado.resolver.strings.StringResolver;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
@@ -16,8 +22,14 @@ public class CommandManager {
     private final JavaPlugin plugin;
     private final Map<String, CommandMethod> commandsRegister = new HashMap<>();
 
+    private final Map<Class<?>, ArgumentResolver<?>> resolvers = new HashMap<>();
+
+    private final CommandParameterResolver parameterResolver;
+
     public CommandManager(JavaPlugin plugin) {
         this.plugin = plugin;
+        registerResolvers();
+        parameterResolver = new CommandParameterResolver(resolvers);
     }
 
     public void registerCommands(Object... objects) {
@@ -73,7 +85,7 @@ public class CommandManager {
 
                 try {
                     String[] newArgs = Arrays.copyOfRange(args, argsUsed, args.length);
-                    Object[] parameters = buildParameters(commandMethod.method, sender, newArgs);
+                    Object[] parameters = parameterResolver.buildParameters(commandMethod.method, sender, newArgs);
                     commandMethod.method.invoke(commandMethod.instance, parameters);
                 } catch (IllegalArgumentException e) {
                     sender.sendMessage("§c[ ! ] Erro nos parâmetros: " + e.getMessage());
@@ -113,30 +125,18 @@ public class CommandManager {
         return true;
     }
 
-    private Object[] buildParameters(Method method, CommandSender sender, String[] args) throws IllegalArgumentException {
-        List<Object> params = new ArrayList<>();
-        int argIndex = 0;
+    private void registerResolvers() {
+        resolvers.put(String.class, new StringResolver());
 
-        for (Class<?> type : method.getParameterTypes()) {
-            if (type == CommandSender.class) {
-                params.add(sender);
-            } else if (type == Player.class) {
-                if (sender instanceof Player) {
-                    params.add((Player) sender);
-                } else {
-                    throw new IllegalArgumentException("O sender não é um jogador.");
-                }
-            } else if (type == String[].class) {
-                params.add(args);
-            } else if (type == String.class) {
-                if (argIndex >= args.length)
-                    throw new IllegalArgumentException("Faltando argumento para String");
-                params.add(args[argIndex++]);
-            } else {
-                throw new IllegalArgumentException("Tipo de parâmetro não suportado: " + type.getSimpleName());
-            }
-        }
+        resolvers.put(boolean.class, new BooleanResolver());
+        resolvers.put(Boolean.class, new BooleanResolver());
 
-        return params.toArray();
+        resolvers.put(int.class, new IntegerResolver());
+        resolvers.put(Integer.class, new IntegerResolver());
+
+        resolvers.put(double.class, new DoubleResolver());
+        resolvers.put(Double.class, new DoubleResolver());
+
+        resolvers.put(Player.class, new PlayerResolver());
     }
 }

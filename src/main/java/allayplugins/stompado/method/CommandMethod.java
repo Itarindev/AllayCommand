@@ -1,10 +1,11 @@
 package allayplugins.stompado.method;
 
-import allayplugins.stompado.commands.CommandBase;
+import allayplugins.stompado.command.CommandBase;
 
 import java.lang.reflect.Method;
 
 public class CommandMethod {
+
     public final Object instance;
     public final Method method;
     public final CommandBase annotation;
